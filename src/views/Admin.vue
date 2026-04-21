@@ -2,7 +2,8 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { io, Socket } from 'socket.io-client'
 import { SOCKET_URL, API_BASE_URL } from '../config'
-import { Package, BellRing, Plus, Pencil, Trash2, X, Search, Calendar } from 'lucide-vue-next'
+import { Package, BellRing, Plus, Pencil, Trash2, X, Search, Calendar, LogOut } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
 
 interface ServiceCall {
   id: number;
@@ -21,14 +22,24 @@ interface Product {
   image_url?: string;
 }
 
+const router = useRouter()
 const activeTab = ref('calls') // 'calls' | 'stock'
 const calls = ref<ServiceCall[]>([])
 const products = ref<Product[]>([])
 const socket = ref<Socket | null>(null)
 
+// 退出登录
+const handleLogout = () => {
+  if (confirm('确定要退出管理后台吗？')) {
+    localStorage.removeItem('admin-token')
+    router.push('/login')
+  }
+}
+
 // 筛选状态
 const searchQuery = ref('')
 const filterDate = ref('')
+// ... (rest of refs and functions)
 
 // 弹窗状态
 const showModal = ref(false)
