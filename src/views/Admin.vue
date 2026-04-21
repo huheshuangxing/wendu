@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { io, Socket } from 'socket.io-client'
 import { SOCKET_URL, API_BASE_URL } from '../config'
-import { Package, BellRing, Plus, Pencil, Trash2, X } from 'lucide-vue-next'
+import { Package, BellRing, Plus, Pencil, Trash2, X, Search, Calendar } from 'lucide-vue-next'
 
 interface ServiceCall {
   id: number;
@@ -25,6 +25,10 @@ const activeTab = ref('calls') // 'calls' | 'stock'
 const calls = ref<ServiceCall[]>([])
 const products = ref<Product[]>([])
 const socket = ref<Socket | null>(null)
+
+// 筛选状态
+const searchQuery = ref('')
+const filterDate = ref('')
 
 // 弹窗状态
 const showModal = ref(false)
@@ -118,9 +122,29 @@ onUnmounted(() => {
   if (socket.value) socket.value.disconnect()
 })
 
-const formatTime = (dateStr: string) => {
-  return new Date(dateStr).toLocaleTimeString()
+const formatDateTime = (dateStr: string) => {
+  const date = new Date(dateStr)
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  const h = String(date.getHours()).padStart(2, '0')
+  const min = String(date.getMinutes()).padStart(2, '0')
+  const s = String(date.getSeconds()).padStart(2, '0')
+  return `${y}-${m}-${d} ${h}:${min}:${s}`
 }
+
+// 筛选后的呼叫记录
+const filteredCalls = computed(() => {
+  return calls.value.filter(call => {
+    const matchesSearch = call.room_number.includes(searchQuery.value) || 
+                         call.type.toLowerCase().includes(searchQuery.value.toLowerCase())
+    
+    const callDate = new Date(call.created_at).toISOString().split('T')[0]
+    const matchesDate = !filterDate.value || callDate === filterDate.value
+    
+    return matchesSearch && matchesDate
+  })
+})
 
 // 标记为已处理
 const markAsProcessed = async (id: number) => {
@@ -136,6 +160,22 @@ const markAsProcessed = async (id: number) => {
     }
   } catch (err) {
     console.error('更新状态失败:', err)
+  }
+}
+
+// 删除呼叫记录
+const deleteCall = async (id: number) => {
+  if (!confirm('确定要删除这条呼叫记录吗？')) return
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/service_calls/${id}`, {
+      method: 'DELETE'
+    })
+    if (response.ok) {
+      calls.value = calls.value.filter(c => c.id !== id)
+    }
+  } catch (err) {
+    console.error('删除呼叫记录失败:', err)
   }
 }
 
@@ -221,36 +261,55 @@ const handleImageUpload = async (event: Event) => {
 <template>
   <div class="p-8">
     <!-- 头部与标签切换 -->
-    <div class="flex justify-between items-end mb-8">
+    <div class="flex flex-col lg:flex-row lg:justify-between lg:items-end mb-8 gap-4">
       <div>
-        <h2 class="text-3xl font-bold text-white mb-4">管理员控制台</h2>
-        <div class="flex space-x-1 bg-black/40 p-1 rounded-xl border border-gray-800">
+        <h2 class="text-3xl font-bold text-white mb-4 tracking-tight">管理员控制台</h2>
+        <div class="flex space-x-1 bg-black/40 p-1 rounded-xl border border-gray-800 w-fit">
           <button 
             @click="activeTab = 'calls'"
-            :class="[activeTab === 'calls' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-300']"
-            class="flex items-center space-x-2 px-4 py-2 rounded-lg text-sm transition-all"
+            :class="[activeTab === 'calls' ? 'bg-gray-800 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300']"
+            class="flex items-center space-x-2 px-6 py-2.5 rounded-lg text-sm transition-all"
           >
             <BellRing class="w-4 h-4" />
-            <span>实时呼叫</span>
+            <span>呼叫历史</span>
           </button>
           <button 
             @click="activeTab = 'stock'"
-            :class="[activeTab === 'stock' ? 'bg-gray-800 text-white' : 'text-gray-500 hover:text-gray-300']"
-            class="flex items-center space-x-2 px-4 py-2 rounded-lg text-sm transition-all"
+            :class="[activeTab === 'stock' ? 'bg-gray-800 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300']"
+            class="flex items-center space-x-2 px-6 py-2.5 rounded-lg text-sm transition-all"
           >
             <Package class="w-4 h-4" />
-            <span>库存管理</span>
+            <span>商品管理</span>
           </button>
         </div>
       </div>
       
-      <div v-if="activeTab === 'calls'" class="px-4 py-2 bg-brand-pink/20 border border-brand-pink/50 rounded-lg text-brand-pink text-sm animate-pulse">
-        服务监听中...
+      <div v-if="activeTab === 'calls'" class="flex items-center space-x-4">
+        <!-- 搜索和日期筛选 -->
+        <div class="relative flex-1 lg:w-64 group">
+          <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 group-focus-within:text-brand-blue transition-colors" />
+          <input 
+            v-model="searchQuery"
+            type="text" 
+            placeholder="搜索房间或类型..."
+            class="w-full bg-black/40 border border-gray-800 rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-brand-blue transition-all"
+          />
+        </div>
+        <div class="relative group">
+          <Calendar class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 group-focus-within:text-brand-blue transition-colors" />
+          <input 
+            v-model="filterDate"
+            type="date" 
+            class="bg-black/40 border border-gray-800 rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-brand-blue transition-all"
+          />
+        </div>
+        <button @click="searchQuery = ''; filterDate = ''" class="text-xs text-gray-500 hover:text-white transition-colors">重置</button>
       </div>
+
       <button 
         v-else 
         @click="openAddModal"
-        class="flex items-center space-x-2 px-6 py-3 bg-brand-blue text-white rounded-xl hover:bg-brand-blue/80 transition-all shadow-lg shadow-brand-blue/20"
+        class="flex items-center space-x-2 px-6 py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-all shadow-lg"
       >
         <Plus class="w-4 h-4" />
         <span>新增商品</span>
@@ -258,71 +317,99 @@ const handleImageUpload = async (event: Event) => {
     </div>
 
     <!-- 实时呼叫表格 -->
-    <div v-if="activeTab === 'calls'" class="bg-dark-card border border-gray-800 rounded-2xl overflow-hidden">
+    <div v-if="activeTab === 'calls'" class="bg-dark-card border border-gray-800 rounded-2xl overflow-hidden shadow-2xl">
       <table class="w-full text-left text-gray-300">
         <thead class="bg-black/50 text-gray-500 text-xs uppercase tracking-wider">
           <tr>
-            <th class="px-6 py-4">时间</th>
+            <th class="px-6 py-4">呼叫时间</th>
             <th class="px-6 py-4">房间号</th>
-            <th class="px-6 py-4">呼叫类型</th>
-            <th class="px-6 py-4">状态</th>
-            <th class="px-6 py-4">操作</th>
+            <th class="px-6 py-4">请求内容</th>
+            <th class="px-6 py-4">当前状态</th>
+            <th class="px-6 py-4 text-right">操作管理</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-800">
-          <tr v-for="call in calls" :key="call.id" class="hover:bg-white/5 transition-colors">
-            <td class="px-6 py-4 text-sm">{{ formatTime(call.created_at) }}</td>
-            <td class="px-6 py-4 font-bold text-white">{{ call.room_number }}</td>
+          <tr v-for="call in filteredCalls" :key="call.id" class="hover:bg-white/5 transition-colors">
+            <td class="px-6 py-4 text-sm font-mono text-gray-500">{{ formatDateTime(call.created_at) }}</td>
             <td class="px-6 py-4">
-              <span class="px-3 py-1 bg-gray-800 rounded-full text-xs">{{ call.type }}</span>
+              <span class="px-3 py-1 bg-white/10 rounded-lg font-bold text-white border border-white/5">{{ call.room_number }}</span>
             </td>
             <td class="px-6 py-4">
-              <span v-if="call.status === 'pending'" class="text-yellow-500 text-xs">● 待处理</span>
-              <span v-else class="text-green-500 text-xs">● 已完成</span>
+              <span class="px-3 py-1 bg-brand-pink/10 text-brand-pink rounded-full text-xs font-medium border border-brand-pink/20">{{ call.type }}</span>
             </td>
             <td class="px-6 py-4">
-              <button @click="markAsProcessed(call.id)" class="text-xs text-brand-blue hover:underline">标记为已处理</button>
+              <span v-if="call.status === 'pending'" class="flex items-center text-yellow-500 text-xs font-bold uppercase tracking-wider animate-pulse">
+                <span class="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
+                待处理
+              </span>
+              <span v-else class="flex items-center text-green-500 text-xs font-bold uppercase tracking-wider opacity-60">
+                <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                已完成
+              </span>
+            </td>
+            <td class="px-6 py-4 text-right space-x-4">
+              <button 
+                v-if="call.status === 'pending'" 
+                @click="markAsProcessed(call.id)" 
+                class="text-xs font-bold text-white bg-green-600/20 hover:bg-green-600 px-3 py-1.5 rounded-lg transition-all border border-green-600/30"
+              >
+                完成处理
+              </button>
+              <button 
+                @click="deleteCall(call.id)" 
+                class="text-gray-500 hover:text-brand-pink transition-colors"
+              >
+                <Trash2 class="w-4 h-4" />
+              </button>
             </td>
           </tr>
-          <tr v-if="calls.length === 0">
-            <td colspan="5" class="px-6 py-10 text-center text-gray-600">暂无呼叫记录</td>
+          <tr v-if="filteredCalls.length === 0">
+            <td colspan="5" class="px-6 py-20 text-center">
+              <div class="flex flex-col items-center opacity-20">
+                <BellRing class="w-12 h-12 mb-4" />
+                <p class="text-sm">没有找到符合条件的记录</p>
+              </div>
+            </td>
           </tr>
         </tbody>
       </table>
     </div>
 
     <!-- 库存管理表格 -->
-    <div v-else class="bg-dark-card border border-gray-800 rounded-2xl overflow-hidden">
+    <div v-else class="bg-dark-card border border-gray-800 rounded-2xl overflow-hidden shadow-2xl">
       <table class="w-full text-left text-gray-300">
         <thead class="bg-black/50 text-gray-500 text-xs uppercase tracking-wider">
           <tr>
             <th class="px-6 py-4 w-16">图片</th>
             <th class="px-6 py-4">商品名称</th>
-            <th class="px-6 py-4">分类</th>
-            <th class="px-6 py-4">单价</th>
-            <th class="px-6 py-4">库存</th>
-            <th class="px-6 py-4 text-right">操作</th>
+            <th class="px-6 py-4">所属分类</th>
+            <th class="px-6 py-4">销售单价</th>
+            <th class="px-6 py-4">剩余库存</th>
+            <th class="px-6 py-4 text-right">管理操作</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-800">
           <tr v-for="item in products" :key="item.id" class="hover:bg-white/5 transition-colors">
             <td class="px-6 py-4">
-              <div v-if="item.image_url" class="w-10 h-10 rounded overflow-hidden bg-black/50">
+              <div v-if="item.image_url" class="w-10 h-10 rounded-lg overflow-hidden bg-black/50 border border-white/5">
                 <img :src="`${API_BASE_URL}${item.image_url}`" class="w-full h-full object-cover" />
               </div>
-              <div v-else class="w-10 h-10 rounded bg-gray-800 flex items-center justify-center text-gray-500 text-xs">
-                无
+              <div v-else class="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center text-gray-500 text-[10px] uppercase font-bold">
+                No Img
               </div>
             </td>
             <td class="px-6 py-4 font-bold text-white">{{ item.name }}</td>
-            <td class="px-6 py-4 text-sm">{{ item.category }}</td>
-            <td class="px-6 py-4 text-sm text-brand-pink">¥{{ item.price.toFixed(2) }}</td>
+            <td class="px-6 py-4 text-sm text-gray-400">{{ item.category }}</td>
+            <td class="px-6 py-4 text-sm font-bold text-white">¥{{ item.price.toFixed(2) }}</td>
             <td class="px-6 py-4">
-              <span :class="item.stock < 10 ? 'text-brand-pink font-bold' : 'text-gray-400'" class="text-sm">
+              <span v-if="item.stock <= 0" class="px-2 py-0.5 bg-brand-pink/20 text-brand-pink text-[10px] font-bold rounded border border-brand-pink/30 uppercase">
+                已售罄
+              </span>
+              <span v-else :class="item.stock < 10 ? 'text-brand-pink font-bold' : 'text-gray-400'" class="text-sm">
                 {{ item.stock }}
               </span>
             </td>
-            <td class="px-6 py-4 text-right space-x-4">
+            <td class="px-6 py-4 text-right space-x-6">
               <button @click="openEditModal(item)" class="text-gray-500 hover:text-white transition-colors">
                 <Pencil class="w-4 h-4" />
               </button>
@@ -339,8 +426,8 @@ const handleImageUpload = async (event: Event) => {
     <div v-if="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
       <div class="bg-dark-card border border-gray-800 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl">
         <div class="p-6 border-b border-gray-800 flex justify-between items-center">
-          <h3 class="text-xl font-bold text-white">{{ modalType === 'add' ? '新增商品' : '修改商品' }}</h3>
-          <button @click="showModal = false" class="text-gray-500 hover:text-white">
+          <h3 class="text-xl font-bold text-white tracking-tight">{{ modalType === 'add' ? '新增商品' : '修改商品' }}</h3>
+          <button @click="showModal = false" class="text-gray-500 hover:text-white transition-colors">
             <X class="w-6 h-6" />
           </button>
         </div>
@@ -348,33 +435,33 @@ const handleImageUpload = async (event: Event) => {
         <div class="p-8 space-y-6">
           <div class="grid grid-cols-2 gap-6">
             <div class="col-span-2">
-              <label class="block text-xs text-gray-500 uppercase tracking-widest mb-2">商品图片</label>
-              <div class="flex items-center space-x-4">
-                <div v-if="currentProduct.image_url" class="w-16 h-16 rounded-xl overflow-hidden border border-gray-800 bg-black/40 shrink-0">
+              <label class="block text-xs text-gray-500 uppercase tracking-widest mb-3 font-bold">商品图片展示</label>
+              <div class="flex items-center space-x-6">
+                <div v-if="currentProduct.image_url" class="w-20 h-20 rounded-2xl overflow-hidden border border-gray-800 bg-black/40 shadow-inner">
                   <img :src="`${API_BASE_URL}${currentProduct.image_url}`" class="w-full h-full object-cover" />
                 </div>
-                <div v-else class="w-16 h-16 rounded-xl border border-gray-800 bg-black/40 flex items-center justify-center text-gray-600 text-xs shrink-0">
-                  暂无图片
+                <div v-else class="w-20 h-20 rounded-2xl border border-gray-800 bg-black/40 flex items-center justify-center text-gray-600 text-xs font-bold uppercase shrink-0">
+                  None
                 </div>
                 <div class="flex-1">
                   <input 
                     type="file" 
                     accept="image/*" 
                     @change="handleImageUpload" 
-                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-brand-blue/10 file:text-brand-blue hover:file:bg-brand-blue/20 transition-all cursor-pointer" 
+                    class="block w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:uppercase file:bg-white file:text-black hover:file:bg-gray-200 transition-all cursor-pointer" 
                     :disabled="isUploading" 
                   />
-                  <p v-if="isUploading" class="text-xs text-brand-pink mt-2">正在上传...</p>
+                  <p v-if="isUploading" class="text-[10px] text-brand-pink mt-2 font-bold animate-pulse uppercase">Uploading...</p>
                 </div>
               </div>
             </div>
             <div class="col-span-2">
-              <label class="block text-xs text-gray-500 uppercase tracking-widest mb-2">商品名称</label>
-              <input v-model="currentProduct.name" type="text" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-brand-blue outline-none" />
+              <label class="block text-xs text-gray-500 uppercase tracking-widest mb-3 font-bold">商品全名</label>
+              <input v-model="currentProduct.name" type="text" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-brand-blue outline-none transition-colors" />
             </div>
             <div>
-              <label class="block text-xs text-gray-500 uppercase tracking-widest mb-2">分类</label>
-              <select v-model="currentProduct.category" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-brand-blue outline-none">
+              <label class="block text-xs text-gray-500 uppercase tracking-widest mb-3 font-bold">商品分类</label>
+              <select v-model="currentProduct.category" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-brand-blue outline-none appearance-none cursor-pointer">
                 <option value="饮料">饮料</option>
                 <option value="零食">零食</option>
                 <option value="外设">外设</option>
@@ -382,20 +469,20 @@ const handleImageUpload = async (event: Event) => {
               </select>
             </div>
             <div>
-              <label class="block text-xs text-gray-500 uppercase tracking-widest mb-2">单价 (元)</label>
-              <input v-model.number="currentProduct.price" type="number" step="0.1" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-brand-blue outline-none" />
+              <label class="block text-xs text-gray-500 uppercase tracking-widest mb-3 font-bold">单价 (¥)</label>
+              <input v-model.number="currentProduct.price" type="number" step="0.1" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-brand-blue outline-none transition-colors" />
             </div>
             <div>
-              <label class="block text-xs text-gray-500 uppercase tracking-widest mb-2">初始库存</label>
-              <input v-model.number="currentProduct.stock" type="number" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-brand-blue outline-none" />
+              <label class="block text-xs text-gray-500 uppercase tracking-widest mb-3 font-bold">当前库存</label>
+              <input v-model.number="currentProduct.stock" type="number" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-brand-blue outline-none transition-colors" />
             </div>
           </div>
         </div>
 
         <div class="p-6 bg-black/20 border-t border-gray-800 flex justify-end space-x-4">
-          <button @click="showModal = false" class="px-6 py-2 text-gray-400 hover:text-white transition-colors">取消</button>
-          <button @click="handleSaveProduct" class="px-8 py-2 bg-brand-blue text-white rounded-xl hover:bg-brand-blue/80 transition-all font-bold">
-            保存提交
+          <button @click="showModal = false" class="px-6 py-2 text-gray-400 hover:text-white transition-colors font-medium">取消</button>
+          <button @click="handleSaveProduct" class="px-8 py-2 bg-white text-black rounded-xl hover:bg-gray-200 transition-all font-bold">
+            保存更改
           </button>
         </div>
       </div>

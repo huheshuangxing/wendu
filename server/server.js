@@ -129,6 +129,16 @@ app.put('/api/service_calls/:id', (req, res) => {
   });
 });
 
+// API: 删除呼叫记录
+app.delete('/api/service_calls/:id', (req, res) => {
+  const { id } = req.params;
+  db.run("DELETE FROM service_calls WHERE id = ?", [id], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    if (this.changes === 0) return res.status(404).json({ error: "记录不存在" });
+    res.json({ message: "删除成功" });
+  });
+});
+
 // Socket.io 实时通讯逻辑
 io.on('connection', (socket) => {
   console.log('用户已连接:', socket.id);

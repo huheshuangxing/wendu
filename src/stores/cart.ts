@@ -14,6 +14,10 @@ export const useCartStore = defineStore('cart', () => {
   })
 
   function addToCart(product: any) {
+    if (product.stock !== undefined && product.stock <= 0) {
+      alert('该商品已售罄/已租赁')
+      return
+    }
     const existingItem = items.value.find(item => item.id === product.id)
     if (existingItem) {
       existingItem.quantity++

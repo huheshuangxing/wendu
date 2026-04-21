@@ -77,9 +77,11 @@ onMounted(() => {
           </div>
           <button 
             @click="cart.addToCart(item)"
-            class="w-full py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm font-medium hover:bg-white hover:text-black transition-all duration-300 active:scale-95"
+            :disabled="item.stock <= 0"
+            class="w-full py-3 rounded-xl border border-white/10 text-sm font-medium transition-all duration-300 active:scale-95"
+            :class="item.stock <= 0 ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-white/5 text-white hover:bg-white hover:text-black'"
           >
-            加入购物车
+            {{ item.stock <= 0 ? '已售罄' : '加入购物车' }}
           </button>
         </div>
       </div>

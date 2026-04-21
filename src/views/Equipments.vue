@@ -65,9 +65,11 @@ onMounted(() => {
           
           <button 
             @click="cart.addToCart(item)"
-            class="w-full py-4 rounded-2xl bg-white text-black font-bold text-sm tracking-wide hover:bg-gray-200 transition-all duration-300 active:scale-95 shadow-lg"
+            :disabled="item.stock <= 0"
+            class="w-full py-4 rounded-2xl font-bold text-sm tracking-wide transition-all duration-300 active:scale-95 shadow-lg"
+            :class="item.stock <= 0 ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-white text-black hover:bg-gray-200'"
           >
-            租用此装备
+            {{ item.stock <= 0 ? '已租赁' : '租用此装备' }}
           </button>
         </div>
       </div>
