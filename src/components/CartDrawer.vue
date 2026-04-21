@@ -3,7 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useCartStore } from '../stores/cart'
 import { X, QrCode, CreditCard, CheckCircle, ShoppingCart } from 'lucide-vue-next'
 import { io, Socket } from 'socket.io-client'
-import { SOCKET_URL } from '../config'
+import { SOCKET_URL, API_BASE_URL } from '../config'
 
 const cart = useCartStore()
 
@@ -27,24 +27,52 @@ const startRoomPay = () => {
   paymentState.value = 'room'
 }
 
-const confirmPayment = () => {
-  if (socket.value && cart.items.length > 0) {
-    const itemsDetails = cart.items.map(item => `${item.name} x${item.quantity}`).join(', ')
-    const hasEquipment = cart.items.some(item => item.category === '外设' || item.unit === '小时')
-    const actionType = hasEquipment ? '租赁/购买' : '购买'
-    
-    socket.value.emit('guest-call', {
-      room_number: roomNumber.value,
-      type: `${actionType}: ${itemsDetails}`
-    })
-  }
+const confirmPayment = async () => {
+  if (cart.items.length === 0) return
 
-  paymentState.value = 'success'
-  setTimeout(() => {
-    cart.clearCart()
-    paymentState.value = 'none'
-    cart.isCartOpen = false
-  }, 2000)
+  try {
+    // 1. 调用后端接口更新库存
+    const response = await fetch(`${API_BASE_URL}/api/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        items: cart.items.map(item => ({ id: item.id, quantity: item.quantity }))
+      })
+    })
+
+    const result = await response.json()
+    if (!response.ok) {
+      alert(result.error || '下单失败')
+      paymentState.value = 'none'
+      return
+    }
+
+    // 2. 发送 Socket 实时呼叫通知管理员
+    if (socket.value) {
+      const itemsDetails = cart.items.map(item => `${item.name} x${item.quantity}`).join(', ')
+      const hasEquipment = cart.items.some(item => item.category === '外设' || item.unit === '小时')
+      const actionType = hasEquipment ? '租赁/购买' : '购买'
+      
+      socket.value.emit('guest-call', {
+        room_number: roomNumber.value,
+        type: `${actionType}: ${itemsDetails}`
+      })
+    }
+
+    // 3. 进入成功状态
+    paymentState.value = 'success'
+    setTimeout(() => {
+      cart.clearCart()
+      paymentState.value = 'none'
+      cart.isCartOpen = false
+      // 触发页面数据刷新（可选，如果需要立即看到库存变化）
+      window.location.reload() 
+    }, 2000)
+
+  } catch (err) {
+    console.error('支付确认过程出错:', err)
+    alert('网络错误，请稍后再试')
+  }
 }
 </script>
 

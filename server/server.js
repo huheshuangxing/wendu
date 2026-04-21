@@ -139,6 +139,46 @@ app.delete('/api/service_calls/:id', (req, res) => {
   });
 });
 
+// API: 提交订单并扣减库存
+app.post('/api/orders', (req, res) => {
+  const { items } = req.body; // items: [{id, quantity}, ...]
+  if (!items || !Array.isArray(items)) {
+    return res.status(400).json({ error: '无效的订单数据' });
+  }
+
+  // 使用事务确保数据一致性
+  db.serialize(() => {
+    db.run("BEGIN TRANSACTION");
+
+    let hasError = false;
+    let processedCount = 0;
+
+    items.forEach(item => {
+      // 检查并扣减库存 (使用 SQL 层面保证不减为负数)
+      db.run(
+        "UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?",
+        [item.quantity, item.id, item.quantity],
+        function(err) {
+          if (err || this.changes === 0) {
+            hasError = true;
+          }
+          processedCount++;
+
+          if (processedCount === items.length) {
+            if (hasError) {
+              db.run("ROLLBACK");
+              res.status(400).json({ error: '部分商品库存不足或不存在，订单已取消' });
+            } else {
+              db.run("COMMIT");
+              res.json({ message: '订单处理成功，库存已更新' });
+            }
+          }
+        }
+      );
+    });
+  });
+});
+
 // Socket.io 实时通讯逻辑
 io.on('connection', (socket) => {
   console.log('用户已连接:', socket.id);
