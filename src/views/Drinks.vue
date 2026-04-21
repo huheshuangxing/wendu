@@ -8,7 +8,7 @@ const cart = useCartStore()
 const categories = ['全部', '饮料', '零食', '洗漱']
 const activeCategory = ref('全部')
 
-const products = ref([])
+const products = ref<any[]>([])
 const loading = ref(true)
 
 const fetchProducts = async () => {

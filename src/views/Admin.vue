@@ -271,28 +271,37 @@ const handleImageUpload = async (event: Event) => {
 
 <template>
   <div class="p-8">
-    <!-- 头部与标签切换 -->
+    <!-- 顶层标题栏 -->
+    <div class="flex justify-between items-center mb-8">
+      <h2 class="text-3xl font-bold text-white tracking-tight">管理员控制台</h2>
+      <button 
+        @click="handleLogout"
+        class="flex items-center space-x-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl border border-red-500/20 transition-all text-sm font-medium"
+      >
+        <LogOut class="w-4 h-4" />
+        <span>退出登录</span>
+      </button>
+    </div>
+
+    <!-- 标签切换与操作栏 -->
     <div class="flex flex-col lg:flex-row lg:justify-between lg:items-end mb-8 gap-4">
-      <div>
-        <h2 class="text-3xl font-bold text-white mb-4 tracking-tight">管理员控制台</h2>
-        <div class="flex space-x-1 bg-black/40 p-1 rounded-xl border border-gray-800 w-fit">
-          <button 
-            @click="activeTab = 'calls'"
-            :class="[activeTab === 'calls' ? 'bg-gray-800 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300']"
-            class="flex items-center space-x-2 px-6 py-2.5 rounded-lg text-sm transition-all"
-          >
-            <BellRing class="w-4 h-4" />
-            <span>呼叫历史</span>
-          </button>
-          <button 
-            @click="activeTab = 'stock'"
-            :class="[activeTab === 'stock' ? 'bg-gray-800 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300']"
-            class="flex items-center space-x-2 px-6 py-2.5 rounded-lg text-sm transition-all"
-          >
-            <Package class="w-4 h-4" />
-            <span>商品管理</span>
-          </button>
-        </div>
+      <div class="flex space-x-1 bg-black/40 p-1 rounded-xl border border-gray-800 w-fit">
+        <button 
+          @click="activeTab = 'calls'"
+          :class="[activeTab === 'calls' ? 'bg-gray-800 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300']"
+          class="flex items-center space-x-2 px-6 py-2.5 rounded-lg text-sm transition-all"
+        >
+          <BellRing class="w-4 h-4" />
+          <span>呼叫历史</span>
+        </button>
+        <button 
+          @click="activeTab = 'stock'"
+          :class="[activeTab === 'stock' ? 'bg-gray-800 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300']"
+          class="flex items-center space-x-2 px-6 py-2.5 rounded-lg text-sm transition-all"
+        >
+          <Package class="w-4 h-4" />
+          <span>商品管理</span>
+        </button>
       </div>
       
       <div v-if="activeTab === 'calls'" class="flex items-center space-x-4">
