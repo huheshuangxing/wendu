@@ -46,6 +46,9 @@ const handleLogin = async () => {
   <div class="min-h-full flex items-center justify-center p-4">
     <div class="w-full max-w-md bg-dark-card border border-gray-800 p-10 rounded-3xl shadow-2xl">
       <div class="text-center mb-10">
+        <div class="flex justify-center mb-6">
+          <img src="/wendulogo.jpg" alt="温度酒店" class="h-20 w-auto object-contain" />
+        </div>
         <h1 class="text-2xl font-light tracking-[0.2em] text-white mb-2">
           ADMIN LOGIN<span class="text-brand-pink">.</span>
         </h1>
