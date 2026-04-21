@@ -3,7 +3,8 @@ import { RouterView, RouterLink, useRoute } from 'vue-router'
 import { Coffee, Mouse, BellRing, Info, ShoppingCart } from 'lucide-vue-next'
 import { useCartStore } from './stores/cart'
 import CartDrawer from './components/CartDrawer.vue'
-import { onMounted, ref, watch } from 'vue'
+import InteractiveBackground from './components/InteractiveBackground.vue'
+import { ref, watch } from 'vue'
 
 const route = useRoute()
 const cart = useCartStore()
@@ -25,25 +26,14 @@ const navItems = [
   { path: '/service', name: '呼叫服务', icon: BellRing },
   { path: '/info', name: '酒店信息', icon: Info },
 ]
-
-const mouseX = ref(0)
-const mouseY = ref(0)
-onMounted(() => {
-  window.addEventListener('mousemove', (e) => {
-    mouseX.value = e.clientX
-    mouseY.value = e.clientY
-  })
-})
 </script>
 
 <template>
-  <div class="h-screen w-screen overflow-hidden bg-dark-bg text-dark-text font-sans relative selection:bg-brand-pink/30">
-    <div 
-      class="pointer-events-none fixed inset-0 z-0 transition-opacity duration-1000"
-      :style="`background: radial-gradient(circle 800px at ${mouseX}px ${mouseY}px, rgba(255,255,255,0.04), transparent)`"
-    ></div>
+  <div class="h-screen w-screen overflow-hidden bg-black text-dark-text font-sans relative selection:bg-brand-pink/30">
+    <!-- Global Interactive Background -->
+    <InteractiveBackground />
 
-    <header class="fixed top-0 left-0 right-0 z-40 px-6 py-2 flex items-center justify-between bg-black/50 backdrop-blur-2xl border-b border-white/5 saturate-150">
+    <header v-if="route.path !== '/'" class="fixed top-0 left-0 right-0 z-40 px-6 py-2 flex items-center justify-between bg-black/50 backdrop-blur-2xl border-b border-white/5 saturate-150">
       <div class="flex items-center space-x-4">
         <RouterLink :to="{ path: '/', query: route.query }" class="flex items-center py-1">
           <img src="/wendulogo.jpg" alt="温渡" class="h-14 md:h-16 w-auto object-contain hover:opacity-80 transition-opacity" />
@@ -80,7 +70,7 @@ onMounted(() => {
       </div>
     </header>
 
-    <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-black/60 backdrop-blur-xl border-t border-white/10 flex justify-around p-4 pb-safe">
+    <nav v-if="route.path !== '/'" class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-black/60 backdrop-blur-xl border-t border-white/10 flex justify-around p-4 pb-safe">
        <RouterLink 
           v-for="item in navItems" 
           :key="item.path" 
@@ -93,8 +83,8 @@ onMounted(() => {
         </RouterLink>
     </nav>
 
-    <main class="h-full pt-24 pb-20 md:pb-0 relative z-10 overflow-y-auto scroll-smooth">
-      <div class="max-w-6xl mx-auto p-6 md:p-10">
+    <main class="h-full relative z-10 overflow-y-auto scroll-smooth" :class="{ 'pt-24 pb-20 md:pb-0': route.path !== '/' }">
+      <div :class="route.path === '/' ? 'w-full' : 'max-w-6xl mx-auto p-6 md:p-10'">
         <RouterView v-slot="{ Component }">
           <transition name="apple-fade" mode="out-in">
             <component :is="Component" />
