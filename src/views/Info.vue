@@ -57,10 +57,35 @@ const copyWifi = () => {
           </div>
           <h3 class="text-2xl font-bold text-white tracking-tight">入住与退房</h3>
         </div>
-        <ul class="space-y-5 text-gray-400 text-base">
-          <li class="flex items-start"><div class="w-1.5 h-1.5 rounded-full bg-white mt-2 mr-4 shrink-0 shadow-[0_0_5px_white]"></div>退房时间为每日 <strong class="text-white mx-1">14:00</strong> 前，超时将加收半天房费。</li>
-          <li class="flex items-start"><div class="w-1.5 h-1.5 rounded-full bg-white mt-2 mr-4 shrink-0 shadow-[0_0_5px_white]"></div>如需续住，请提前联系前台或在桌面计费系统中操作。</li>
-          <li class="flex items-start"><div class="w-1.5 h-1.5 rounded-full bg-white mt-2 mr-4 shrink-0 shadow-[0_0_5px_white]"></div>房内设备如有人为损坏，需照价赔偿。</li>
+        <ul class="space-y-6 text-gray-400 text-base">
+          <li class="flex items-start">
+            <div class="w-1.5 h-1.5 rounded-full bg-brand-pink mt-2 mr-4 shrink-0 shadow-[0_0_8px_rgba(255,107,157,0.8)]"></div>
+            <div>
+              <p class="text-white font-medium mb-1">入住时间</p>
+              <p class="text-sm">每日 <span class="text-white">14:00</span> 以后即可办理入住。</p>
+            </div>
+          </li>
+          <li class="flex items-start">
+            <div class="w-1.5 h-1.5 rounded-full bg-brand-pink mt-2 mr-4 shrink-0 shadow-[0_0_8px_rgba(255,107,157,0.8)]"></div>
+            <div>
+              <p class="text-white font-medium mb-1">退房时间</p>
+              <p class="text-sm">请于每日 <span class="text-white">14:00</span> 前办理退房，超时将酌情加收费用。</p>
+            </div>
+          </li>
+          <li class="flex items-start">
+            <div class="w-1.5 h-1.5 rounded-full bg-brand-pink mt-2 mr-4 shrink-0 shadow-[0_0_8px_rgba(255,107,157,0.8)]"></div>
+            <div>
+              <p class="text-white font-medium mb-1">续住申请</p>
+              <p class="text-sm">如需续住，请提前联系前台或通过桌面计费系统申请。</p>
+            </div>
+          </li>
+          <li class="flex items-start">
+            <div class="w-1.5 h-1.5 rounded-full bg-brand-pink mt-2 mr-4 shrink-0 shadow-[0_0_8px_rgba(255,107,157,0.8)]"></div>
+            <div>
+              <p class="text-white font-medium mb-1">设备维护</p>
+              <p class="text-sm">请爱护客房电竞设备，如有人为损坏需按价赔偿。</p>
+            </div>
+          </li>
         </ul>
       </div>
 
@@ -70,12 +95,30 @@ const copyWifi = () => {
           <div class="bg-white/10 p-3 rounded-xl">
             <Gamepad2 class="w-8 h-8 text-white" />
           </div>
-          <h3 class="text-2xl font-bold text-white tracking-tight">电竞特权与增值</h3>
+          <h3 class="text-2xl font-bold text-white tracking-tight">电竞特权</h3>
         </div>
-        <ul class="space-y-5 text-gray-400 text-base">
-          <li class="flex items-start"><div class="w-1.5 h-1.5 rounded-full bg-white mt-2 mr-4 shrink-0 shadow-[0_0_5px_white]"></div>本店提供绝地求生、英雄联盟等主流网吧特权。</li>
-          <li class="flex items-start"><div class="w-1.5 h-1.5 rounded-full bg-white mt-2 mr-4 shrink-0 shadow-[0_0_5px_white]"></div>内置多款游戏加速器（UU、雷神等），免费使用。</li>
-          <li class="flex items-start"><div class="w-1.5 h-1.5 rounded-full bg-white mt-2 mr-4 shrink-0 shadow-[0_0_5px_white]"></div>如需代练、陪玩服务，请联系前台获取官方推荐平台。</li>
+        <ul class="space-y-6 text-gray-400 text-base">
+          <li class="flex items-start">
+            <div class="w-1.5 h-1.5 rounded-full bg-brand-blue mt-2 mr-4 shrink-0 shadow-[0_0_8px_rgba(0,210,255,0.8)]"></div>
+            <div>
+              <p class="text-white font-medium mb-1">金牌网吧特权</p>
+              <p class="text-sm">支持英雄联盟、绝地求生等主流游戏全英雄/皮肤特权。</p>
+            </div>
+          </li>
+          <li class="flex items-start">
+            <div class="w-1.5 h-1.5 rounded-full bg-brand-blue mt-2 mr-4 shrink-0 shadow-[0_0_8px_rgba(0,210,255,0.8)]"></div>
+            <div>
+              <p class="text-white font-medium mb-1">海量库内容</p>
+              <p class="text-sm">内置 1000+ 款热门单机与网络游戏，极速下载，即点即玩。</p>
+            </div>
+          </li>
+          <li class="flex items-start">
+            <div class="w-1.5 h-1.5 rounded-full bg-brand-blue mt-2 mr-4 shrink-0 shadow-[0_0_8px_rgba(0,210,255,0.8)]"></div>
+            <div>
+              <p class="text-white font-medium mb-1">温馨提示</p>
+              <p class="text-sm">为保障账号安全，本店暂不提供任何代练或陪玩相关中介服务。</p>
+            </div>
+          </li>
         </ul>
       </div>
     </div>
