@@ -3,10 +3,21 @@ import { RouterView, RouterLink, useRoute } from 'vue-router'
 import { Coffee, Mouse, BellRing, Info, ShoppingCart } from 'lucide-vue-next'
 import { useCartStore } from './stores/cart'
 import CartDrawer from './components/CartDrawer.vue'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 
 const route = useRoute()
 const cart = useCartStore()
+
+const roomNumber = ref('未知包厢')
+
+// 监听路由变化以更新房间号
+watch(() => route.query.room, (newRoom) => {
+  if (newRoom) {
+    roomNumber.value = `ROOM ${newRoom}`
+  } else {
+    roomNumber.value = '未知包厢'
+  }
+}, { immediate: true })
 
 const navItems = [
   { path: '/drinks', name: '饮品零食', icon: Coffee },
@@ -34,11 +45,11 @@ onMounted(() => {
 
     <header class="fixed top-0 left-0 right-0 z-40 px-6 py-2 flex items-center justify-between bg-black/50 backdrop-blur-2xl border-b border-white/5 saturate-150">
       <div class="flex items-center space-x-4">
-        <RouterLink to="/" class="flex items-center py-1">
+        <RouterLink :to="{ path: '/', query: route.query }" class="flex items-center py-1">
           <img src="/wendulogo.jpg" alt="温渡" class="h-14 md:h-16 w-auto object-contain hover:opacity-80 transition-opacity" />
         </RouterLink>
-        <div class="px-2.5 py-1 rounded-full bg-white/10 text-[10px] font-bold tracking-widest text-gray-300 backdrop-blur-md border border-white/5">
-          ROOM 8888
+        <div class="px-2.5 py-1 rounded-full bg-white/10 text-[10px] font-bold tracking-widest text-gray-300 backdrop-blur-md border border-white/5 uppercase">
+          {{ roomNumber }}
         </div>
       </div>
 
@@ -46,7 +57,7 @@ onMounted(() => {
         <RouterLink 
           v-for="item in navItems" 
           :key="item.path" 
-          :to="item.path"
+          :to="{ path: item.path, query: route.query }"
           class="px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 relative group flex items-center space-x-2"
           :class="[route.path === item.path ? 'text-white' : 'text-gray-400 hover:text-white']"
         >
@@ -73,7 +84,7 @@ onMounted(() => {
        <RouterLink 
           v-for="item in navItems" 
           :key="item.path" 
-          :to="item.path"
+          :to="{ path: item.path, query: route.query }"
           class="flex flex-col items-center space-y-1"
           :class="route.path === item.path ? 'text-white' : 'text-gray-500'"
         >

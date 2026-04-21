@@ -3,6 +3,10 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { Wrench, Droplets, Wind, PhoneCall } from 'lucide-vue-next'
 import { io, Socket } from 'socket.io-client'
 import { SOCKET_URL } from '../config'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+const roomNumber = ref((route.query.room as string) || '未知包厢')
 
 const services = [
   { id: 's1', name: '呼叫网管', desc: '电脑故障、外设问题', icon: Wrench, color: 'text-white' },
@@ -24,7 +28,7 @@ onUnmounted(() => {
 const callService = (serviceName: string) => {
   if (socket.value) {
     socket.value.emit('guest-call', {
-      room_number: '808',
+      room_number: roomNumber.value,
       type: serviceName
     })
     alert(`请求 [${serviceName}] 已发送！\n服务人员已收到请求，正前往您的房间，请稍候。`)

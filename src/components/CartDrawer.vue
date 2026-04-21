@@ -1,15 +1,22 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useCartStore } from '../stores/cart'
 import { X, QrCode, CreditCard, CheckCircle, ShoppingCart } from 'lucide-vue-next'
 import { io, Socket } from 'socket.io-client'
 import { SOCKET_URL, API_BASE_URL } from '../config'
+import { useRoute } from 'vue-router'
 
 const cart = useCartStore()
+const route = useRoute()
 
 const paymentState = ref<'none' | 'qr' | 'room' | 'success'>('none')
-const roomNumber = ref('8888')
+const roomNumber = ref('未知')
 const socket = ref<Socket | null>(null)
+
+// 自动从网址获取 room 参数
+watch(() => route.query.room, (newRoom) => {
+  roomNumber.value = (newRoom as string) || '未知'
+}, { immediate: true })
 
 onMounted(() => {
   socket.value = io(SOCKET_URL)
