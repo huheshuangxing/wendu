@@ -32,10 +32,10 @@ onMounted(() => {
       :style="`background: radial-gradient(circle 800px at ${mouseX}px ${mouseY}px, rgba(255,255,255,0.04), transparent)`"
     ></div>
 
-    <header class="fixed top-0 left-0 right-0 z-40 px-6 py-4 flex items-center justify-between bg-black/50 backdrop-blur-2xl border-b border-white/5 saturate-150">
+    <header class="fixed top-0 left-0 right-0 z-40 px-6 py-2 flex items-center justify-between bg-black/50 backdrop-blur-2xl border-b border-white/5 saturate-150">
       <div class="flex items-center space-x-4">
-        <RouterLink to="/" class="flex items-center">
-          <img src="/wendulogo.jpg" alt="温度酒店" class="h-10 w-auto object-contain hover:opacity-80 transition-opacity" />
+        <RouterLink to="/" class="flex items-center py-1">
+          <img src="/wendulogo.jpg" alt="温渡" class="h-14 md:h-16 w-auto object-contain hover:opacity-80 transition-opacity" />
         </RouterLink>
         <div class="px-2.5 py-1 rounded-full bg-white/10 text-[10px] font-bold tracking-widest text-gray-300 backdrop-blur-md border border-white/5">
           ROOM 8888
