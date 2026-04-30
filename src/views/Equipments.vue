@@ -16,7 +16,7 @@ const fetchEquipments = async () => {
         ...item,
         unit: '小时',
         deposit: Math.round(item.price * 10),
-        image: item.image || 'https://images.unsplash.com/photo-1593640408182-31c70c8268f5?w=500&q=80',
+        image: item.image_url ? `${API_BASE_URL}${item.image_url}` : (item.image || 'https://images.unsplash.com/photo-1593640408182-31c70c8268f5?w=500&q=80'),
         desc: item.desc || '顶级电竞外设'
       }))
   } catch (err) {
