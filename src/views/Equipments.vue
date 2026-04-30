@@ -44,8 +44,8 @@ onMounted(() => {
       >
         <div class="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
 
-        <div class="w-full md:w-48 h-48 bg-black/50 rounded-2xl overflow-hidden shrink-0 flex items-center justify-center p-4">
-           <img :src="item.image" :alt="item.name" class="w-full h-full object-contain filter drop-shadow-2xl transition-transform duration-700 ease-out group-hover:scale-110" />
+        <div class="w-full md:w-48 h-48 bg-black/50 rounded-2xl overflow-hidden shrink-0">
+           <img :src="item.image" :alt="item.name" class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110" />
         </div>
         
         <div class="flex flex-col flex-1 z-10">
