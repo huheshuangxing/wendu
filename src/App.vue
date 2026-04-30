@@ -33,7 +33,7 @@ const navItems = [
     <!-- Global Interactive Background -->
     <InteractiveBackground />
 
-    <header v-if="route.path !== '/'" class="fixed top-0 left-0 right-0 z-40 px-6 py-2 flex items-center justify-between bg-black/50 backdrop-blur-2xl border-b border-white/5 saturate-150">
+    <header v-if="route.path !== '/login'" class="fixed top-0 left-0 right-0 z-40 px-6 py-2 flex items-center justify-between bg-black/50 backdrop-blur-2xl border-b border-white/5 saturate-150">
       <div class="flex items-center space-x-4">
         <RouterLink :to="{ path: '/', query: route.query }" class="flex items-center py-1">
           <img src="/wendulogo.jpg" alt="温渡" class="h-14 md:h-16 w-auto object-contain hover:opacity-80 transition-opacity" />
@@ -49,16 +49,16 @@ const navItems = [
           :key="item.path" 
           :to="{ path: item.path, query: route.query }"
           class="px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 relative group flex items-center space-x-2"
-          :class="[route.path === item.path ? 'text-white' : 'text-gray-400 hover:text-white']"
+          :class="[route.path === item.path || (item.path === '/drinks' && route.path === '/') ? 'text-white' : 'text-gray-400 hover:text-white']"
         >
-          <component :is="item.icon" class="w-4 h-4 relative z-10" :class="route.path === item.path ? 'text-white' : 'text-gray-500 group-hover:text-gray-300'" />
+          <component :is="item.icon" class="w-4 h-4 relative z-10" :class="route.path === item.path || (item.path === '/drinks' && route.path === '/') ? 'text-white' : 'text-gray-500 group-hover:text-gray-300'" />
           <span class="relative z-10">{{ item.name }}</span>
         </RouterLink>
       </nav>
 
       <div class="flex items-center">
         <button 
-          v-if="route.path === '/drinks' || route.path === '/equipments'" 
+          v-if="route.path === '/' || route.path === '/drinks' || route.path === '/equipments'" 
           @click="cart.toggleCart()"
           class="relative p-3 rounded-full hover:bg-white/10 transition-all duration-300 group border border-transparent hover:border-white/10 cursor-pointer active:scale-95"
         >
@@ -70,21 +70,21 @@ const navItems = [
       </div>
     </header>
 
-    <nav v-if="route.path !== '/'" class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-black/60 backdrop-blur-xl border-t border-white/10 flex justify-around p-4 pb-safe">
+    <nav v-if="route.path !== '/login'" class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-black/60 backdrop-blur-xl border-t border-white/10 flex justify-around p-4 pb-safe">
        <RouterLink 
           v-for="item in navItems" 
           :key="item.path" 
           :to="{ path: item.path, query: route.query }"
           class="flex flex-col items-center space-y-1"
-          :class="route.path === item.path ? 'text-white' : 'text-gray-500'"
+          :class="route.path === item.path || (item.path === '/drinks' && route.path === '/') ? 'text-white' : 'text-gray-500'"
         >
           <component :is="item.icon" class="w-6 h-6" />
           <span class="text-[10px]">{{ item.name }}</span>
         </RouterLink>
     </nav>
 
-    <main class="h-full relative z-10 overflow-y-auto scroll-smooth" :class="{ 'pt-24 pb-20 md:pb-0': route.path !== '/' }">
-      <div :class="route.path === '/' ? 'w-full' : 'max-w-6xl mx-auto p-6 md:p-10'">
+    <main class="h-full relative z-10 overflow-y-auto scroll-smooth" :class="{ 'pt-24 pb-20 md:pb-0': route.path !== '/login' }">
+      <div :class="route.path === '/login' ? 'w-full' : 'max-w-6xl mx-auto p-6 md:p-10'">
         <RouterView v-slot="{ Component }">
           <transition name="apple-fade" mode="out-in">
             <component :is="Component" />

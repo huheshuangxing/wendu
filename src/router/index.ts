@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Landing from '../views/Landing.vue'
 import Drinks from '../views/Drinks.vue'
 import Login from '../views/Login.vue'
 
@@ -9,12 +8,11 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: Landing
+      component: Drinks
     },
     {
       path: '/drinks',
-      name: 'drinks',
-      component: Drinks
+      redirect: '/'
     },
     {
       path: '/equipments',
