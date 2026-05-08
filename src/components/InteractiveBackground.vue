@@ -16,8 +16,6 @@ const dots: { x: number; y: number; originX: number; originY: number }[] = [];
 const spacing = 15;
 const influenceRadius = 244;
 const repulsionStrength = 30; 
-const flowStrength = 8; // Maximum pixel offset for flowing movement
-
 const initDots = (width: number, height: number) => {
   dots.length = 0;
   for (let x = spacing / 2; x < width; x += spacing) {

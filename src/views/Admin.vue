@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { io, Socket } from 'socket.io-client'
 import { SOCKET_URL, API_BASE_URL } from '../config'
-import { Package, BellRing, Plus, Pencil, Trash2, X, Search, Calendar, LogOut } from 'lucide-vue-next'
+import { Package, BellRing, Plus, Minus, Pencil, Trash2, X, Search, Calendar, LogOut, ChevronDown, RotateCcw } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 
 interface ServiceCall {
@@ -39,7 +39,24 @@ const handleLogout = () => {
 // 筛选状态
 const searchQuery = ref('')
 const filterDate = ref('')
-// ... (rest of refs and functions)
+const searchProductQuery = ref('')
+const filterProductCategory = ref('')
+
+const isFilterCategoryOpen = ref(false)
+const filterCategories = [
+  { label: '全部分类', value: '' },
+  { label: '饮料', value: '饮料' },
+  { label: '零食', value: '零食' },
+  { label: '外设', value: '外设' },
+  { label: '洗漱', value: '洗漱' }
+]
+const filterCategoryLabel = computed(() => {
+  const found = filterCategories.find(c => c.value === filterProductCategory.value)
+  return found ? found.label : '全部分类'
+})
+
+const isModalCategoryOpen = ref(false)
+const modalCategories = ['饮料', '零食', '外设', '洗漱']
 
 // 弹窗状态
 const showModal = ref(false)
@@ -154,6 +171,15 @@ const filteredCalls = computed(() => {
     const matchesDate = !filterDate.value || callDate === filterDate.value
     
     return matchesSearch && matchesDate
+  })
+})
+
+// 筛选后的商品列表
+const filteredProducts = computed(() => {
+  return products.value.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchProductQuery.value.toLowerCase())
+    const matchesCategory = !filterProductCategory.value || product.category === filterProductCategory.value
+    return matchesSearch && matchesCategory
   })
 })
 
@@ -323,17 +349,76 @@ const handleImageUpload = async (event: Event) => {
             class="bg-black/40 border border-gray-800 rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-brand-blue transition-all"
           />
         </div>
-        <button @click="searchQuery = ''; filterDate = ''" class="text-xs text-gray-500 hover:text-white transition-colors">重置</button>
+        <button 
+          @click="searchQuery = ''; filterDate = ''" 
+          class="flex items-center space-x-1 px-3 py-2 bg-gray-800/50 hover:bg-gray-800 border border-gray-800 rounded-xl text-xs text-gray-400 hover:text-white transition-all whitespace-nowrap"
+        >
+          <RotateCcw class="w-3.5 h-3.5" />
+          <span>重置</span>
+        </button>
       </div>
 
-      <button 
-        v-else 
-        @click="openAddModal"
-        class="flex items-center space-x-2 px-6 py-3 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-all shadow-lg"
-      >
-        <Plus class="w-4 h-4" />
-        <span>新增商品</span>
-      </button>
+      <div v-else class="flex items-center space-x-4 w-full lg:w-auto">
+        <div class="relative flex-1 lg:w-64 group">
+          <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600 group-focus-within:text-brand-blue transition-colors" />
+          <input 
+            v-model="searchProductQuery"
+            type="text" 
+            placeholder="搜索商品名称..."
+            class="w-full bg-black/40 border border-gray-800 rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-brand-blue transition-all"
+          />
+        </div>
+        <div class="relative group z-30">
+          <div 
+            @click="isFilterCategoryOpen = !isFilterCategoryOpen"
+            class="flex items-center justify-between w-full min-w-[120px] bg-black/40 hover:bg-black/60 border border-gray-800 hover:border-gray-700 rounded-xl pl-4 pr-3 py-2 text-sm text-white focus:outline-none focus:border-brand-blue transition-all cursor-pointer"
+          >
+            <span>{{ filterCategoryLabel }}</span>
+            <ChevronDown class="w-4 h-4 text-gray-500 transition-transform duration-300" :class="{ 'rotate-180': isFilterCategoryOpen }" />
+          </div>
+
+          <div v-if="isFilterCategoryOpen" class="fixed inset-0 z-30" @click="isFilterCategoryOpen = false"></div>
+
+          <transition
+            enter-active-class="transition duration-200 ease-out"
+            enter-from-class="transform scale-95 opacity-0"
+            enter-to-class="transform scale-100 opacity-100"
+            leave-active-class="transition duration-150 ease-in"
+            leave-from-class="transform scale-100 opacity-100"
+            leave-to-class="transform scale-95 opacity-0"
+          >
+            <div 
+              v-if="isFilterCategoryOpen" 
+              class="absolute left-0 mt-2 w-full z-40 bg-[#161618] border border-gray-800 rounded-xl shadow-2xl shadow-black/50 overflow-hidden"
+            >
+              <div 
+                v-for="cat in filterCategories" 
+                :key="cat.value"
+                @click="filterProductCategory = cat.value; isFilterCategoryOpen = false"
+                class="px-4 py-2.5 text-sm cursor-pointer transition-colors"
+                :class="filterProductCategory === cat.value ? 'bg-white/10 text-white font-bold' : 'text-gray-400 hover:bg-white/5 hover:text-white'"
+              >
+                {{ cat.label }}
+              </div>
+            </div>
+          </transition>
+        </div>
+        <button 
+          @click="searchProductQuery = ''; filterProductCategory = ''" 
+          class="flex items-center space-x-1 px-3 py-2 bg-gray-800/50 hover:bg-gray-800 border border-gray-800 rounded-xl text-xs text-gray-400 hover:text-white transition-all whitespace-nowrap"
+        >
+          <RotateCcw class="w-3.5 h-3.5" />
+          <span>重置</span>
+        </button>
+        
+        <button 
+          @click="openAddModal"
+          class="flex items-center space-x-2 px-6 py-2 bg-white text-black font-bold rounded-xl hover:bg-gray-200 transition-all shadow-lg shrink-0"
+        >
+          <Plus class="w-4 h-4" />
+          <span>新增商品</span>
+        </button>
+      </div>
     </div>
 
     <!-- 实时呼叫表格 -->
@@ -409,7 +494,7 @@ const handleImageUpload = async (event: Event) => {
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-800">
-          <tr v-for="item in products" :key="item.id" class="hover:bg-white/5 transition-colors">
+          <tr v-for="item in filteredProducts" :key="item.id" class="hover:bg-white/5 transition-colors">
             <td class="px-6 py-4">
               <div v-if="item.image_url" class="w-10 h-10 rounded-lg overflow-hidden bg-black/50 border border-white/5">
                 <img :src="`${API_BASE_URL}${item.image_url}`" class="w-full h-full object-cover" />
@@ -436,6 +521,14 @@ const handleImageUpload = async (event: Event) => {
               <button @click="deleteProduct(item.id)" class="text-gray-500 hover:text-brand-pink transition-colors">
                 <Trash2 class="w-4 h-4" />
               </button>
+            </td>
+          </tr>
+          <tr v-if="filteredProducts.length === 0">
+            <td colspan="6" class="px-6 py-20 text-center">
+              <div class="flex flex-col items-center opacity-20">
+                <Package class="w-12 h-12 mb-4" />
+                <p class="text-sm">没有找到符合条件的商品</p>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -479,22 +572,86 @@ const handleImageUpload = async (event: Event) => {
               <label class="block text-xs text-gray-500 uppercase tracking-widest mb-3 font-bold">商品全名</label>
               <input v-model="currentProduct.name" type="text" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-brand-blue outline-none transition-colors" />
             </div>
-            <div>
+            <div class="relative z-40">
               <label class="block text-xs text-gray-500 uppercase tracking-widest mb-3 font-bold">商品分类</label>
-              <select v-model="currentProduct.category" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-brand-blue outline-none appearance-none cursor-pointer">
-                <option value="饮料">饮料</option>
-                <option value="零食">零食</option>
-                <option value="外设">外设</option>
-                <option value="洗漱">洗漱</option>
-              </select>
+              <div 
+                @click="isModalCategoryOpen = !isModalCategoryOpen"
+                class="flex items-center justify-between w-full bg-black/40 border border-gray-800 hover:border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-brand-blue transition-all cursor-pointer"
+              >
+                <span>{{ currentProduct.category || '请选择分类' }}</span>
+                <ChevronDown class="w-4 h-4 text-gray-500 transition-transform duration-300" :class="{ 'rotate-180': isModalCategoryOpen }" />
+              </div>
+
+              <div v-if="isModalCategoryOpen" class="fixed inset-0 z-30" @click="isModalCategoryOpen = false"></div>
+
+              <transition
+                enter-active-class="transition duration-200 ease-out"
+                enter-from-class="transform scale-95 opacity-0"
+                enter-to-class="transform scale-100 opacity-100"
+                leave-active-class="transition duration-150 ease-in"
+                leave-from-class="transform scale-100 opacity-100"
+                leave-to-class="transform scale-95 opacity-0"
+              >
+                <div 
+                  v-if="isModalCategoryOpen" 
+                  class="absolute left-0 mt-2 w-full z-40 bg-[#161618] border border-gray-800 rounded-xl shadow-2xl shadow-black/50 overflow-hidden"
+                >
+                  <div 
+                    v-for="cat in modalCategories" 
+                    :key="cat"
+                    @click="currentProduct.category = cat; isModalCategoryOpen = false"
+                    class="px-4 py-3 text-sm cursor-pointer transition-colors"
+                    :class="currentProduct.category === cat ? 'bg-white/10 text-white font-bold' : 'text-gray-400 hover:bg-white/5 hover:text-white'"
+                  >
+                    {{ cat }}
+                  </div>
+                </div>
+              </transition>
             </div>
             <div>
               <label class="block text-xs text-gray-500 uppercase tracking-widest mb-3 font-bold">单价 (¥)</label>
-              <input v-model.number="currentProduct.price" type="number" step="0.1" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-brand-blue outline-none transition-colors" />
+              <div class="flex items-center bg-black/40 border border-gray-800 rounded-xl overflow-hidden focus-within:border-brand-blue transition-colors">
+                <button 
+                  @click="currentProduct.price = Math.max(0, parseFloat(((currentProduct.price || 0) - 0.5).toFixed(1)))" 
+                  class="p-3 text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                >
+                  <Minus class="w-4 h-4" />
+                </button>
+                <input 
+                  v-model.number="currentProduct.price" 
+                  type="number" 
+                  step="0.1" 
+                  class="w-full bg-transparent text-center text-white focus:outline-none hide-number-spinners" 
+                />
+                <button 
+                  @click="currentProduct.price = parseFloat(((currentProduct.price || 0) + 0.5).toFixed(1))" 
+                  class="p-3 text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                >
+                  <Plus class="w-4 h-4" />
+                </button>
+              </div>
             </div>
             <div>
               <label class="block text-xs text-gray-500 uppercase tracking-widest mb-3 font-bold">当前库存</label>
-              <input v-model.number="currentProduct.stock" type="number" class="w-full bg-black/40 border border-gray-800 rounded-xl px-4 py-3 text-white focus:border-brand-blue outline-none transition-colors" />
+              <div class="flex items-center bg-black/40 border border-gray-800 rounded-xl overflow-hidden focus-within:border-brand-blue transition-colors">
+                <button 
+                  @click="currentProduct.stock = Math.max(0, (currentProduct.stock || 0) - 1)" 
+                  class="p-3 text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                >
+                  <Minus class="w-4 h-4" />
+                </button>
+                <input 
+                  v-model.number="currentProduct.stock" 
+                  type="number" 
+                  class="w-full bg-transparent text-center text-white focus:outline-none hide-number-spinners" 
+                />
+                <button 
+                  @click="currentProduct.stock = (currentProduct.stock || 0) + 1" 
+                  class="p-3 text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                >
+                  <Plus class="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -509,3 +666,14 @@ const handleImageUpload = async (event: Event) => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.hide-number-spinners::-webkit-inner-spin-button,
+.hide-number-spinners::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.hide-number-spinners {
+  -moz-appearance: textfield;
+}
+</style>
