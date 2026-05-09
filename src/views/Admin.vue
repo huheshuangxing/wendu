@@ -581,7 +581,7 @@ const handleImageUpload = async (event: Event) => {
         </thead>
         <transition-group tag="tbody" name="list" class="divide-y divide-gray-800 relative">
           <tr 
-            v-for="(item, index) in filteredProducts" 
+            v-for="item in filteredProducts" 
             :key="item.id" 
             class="transition-transform duration-300 ease-out group bg-dark-card"
             :class="[
@@ -821,9 +821,11 @@ const handleImageUpload = async (event: Event) => {
 .hide-number-spinners::-webkit-inner-spin-button,
 .hide-number-spinners::-webkit-outer-spin-button {
   -webkit-appearance: none;
+  appearance: none;
   margin: 0;
 }
 .hide-number-spinners {
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 </style>

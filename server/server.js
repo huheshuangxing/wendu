@@ -198,7 +198,10 @@ app.post('/api/orders', (req, res) => {
         await updateStock(item);
       }
       db.run("COMMIT", (err) => {
-        if (err) throw err;
+        if (err) {
+          console.error('事务提交失败:', err.message);
+          return res.status(500).json({ error: '订单处理失败' });
+        }
         console.log('订单处理成功');
         res.json({ message: '订单处理成功' });
       });
