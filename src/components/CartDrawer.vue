@@ -9,7 +9,7 @@ import { useRoute } from 'vue-router'
 const cart = useCartStore()
 const route = useRoute()
 
-const paymentState = ref<'none' | 'qr' | 'room' | 'success'>('none')
+const paymentState = ref<'none' | 'confirming' | 'success'>('none')
 const roomNumber = ref('未知')
 const socket = ref<Socket | null>(null)
 
@@ -26,12 +26,8 @@ onUnmounted(() => {
   if (socket.value) socket.value.disconnect()
 })
 
-const startQRPay = () => {
-  paymentState.value = 'qr'
-}
-
-const startRoomPay = () => {
-  paymentState.value = 'room'
+const startConfirm = () => {
+  paymentState.value = 'confirming'
 }
 
 const confirmPayment = async () => {
@@ -142,20 +138,13 @@ const confirmPayment = async () => {
           <span class="text-white font-light text-2xl tracking-wide">¥ {{ cart.totalPrice }}</span>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1">
           <button 
-            @click="startQRPay"
-            class="py-4 rounded-xl bg-transparent border border-gray-800 text-gray-400 text-xs tracking-widest flex flex-col items-center justify-center hover:border-white hover:text-white transition-all duration-500"
+            @click="startConfirm"
+            class="py-4 rounded-xl bg-brand-pink text-white text-xs tracking-widest flex flex-col items-center justify-center hover:bg-brand-pink/90 transition-all duration-500"
           >
-            <QrCode class="w-5 h-5 mb-2 stroke-[1.5]" />
-            <span>微信 / 支付宝</span>
-          </button>
-          <button 
-            @click="startRoomPay"
-            class="py-4 rounded-xl bg-brand-pink/10 border border-brand-pink/20 text-brand-pink text-xs tracking-widest flex flex-col items-center justify-center hover:bg-brand-pink hover:text-white transition-all duration-500"
-          >
-            <CreditCard class="w-5 h-5 mb-2 stroke-[1.5]" />
-            <span>挂账到房间</span>
+            <ShoppingCart class="w-5 h-5 mb-2 stroke-[1.5]" />
+            <span>确认下单</span>
           </button>
         </div>
       </div>
@@ -169,30 +158,18 @@ const confirmPayment = async () => {
           <X class="w-5 h-5 stroke-[1.5]" />
         </button>
 
-        <div v-if="paymentState === 'qr'" class="space-y-6">
-          <h3 class="text-lg font-light tracking-widest text-white">扫码支付</h3>
-          <div class="bg-white p-4 rounded-2xl inline-block mx-auto">
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=WenduPay" class="w-48 h-48" />
-          </div>
-          <p class="text-gray-500 text-xs tracking-wide">请使用微信或支付宝扫描二维码</p>
-          <div class="pt-6">
-            <button @click="confirmPayment" class="w-full py-4 bg-transparent border border-gray-800 text-gray-300 text-xs tracking-widest rounded-xl hover:border-white hover:text-white transition-all duration-500">
-              模拟：已完成支付
-            </button>
-          </div>
-        </div>
-
-        <div v-if="paymentState === 'room'" class="space-y-8">
-          <h3 class="text-lg font-light tracking-widest text-white">挂账到房间</h3>
+        <div v-if="paymentState === 'confirming'" class="space-y-8">
+          <h3 class="text-lg font-light tracking-widest text-white">确认订单</h3>
           <div class="bg-dark-card py-8 rounded-2xl border border-gray-800">
             <div class="text-gray-600 text-xs tracking-widest uppercase mb-3">房间号</div>
             <div class="text-4xl text-white font-light tracking-widest">{{ roomNumber }}</div>
           </div>
           <p class="text-gray-500 text-xs tracking-wide leading-relaxed">
-            总计 <span class="text-white">¥{{ cart.totalPrice }}</span> 将计入您的房费。
+            订单总计 <span class="text-white">¥{{ cart.totalPrice }}</span>。<br>
+            服务员将稍后送达并现场收款。
           </p>
           <button @click="confirmPayment" class="w-full py-4 bg-brand-pink text-white text-xs tracking-widest font-medium rounded-xl hover:bg-brand-pink/90 transition-all duration-500">
-            确认挂账
+            确认下单
           </button>
         </div>
 

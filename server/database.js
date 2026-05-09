@@ -12,8 +12,14 @@ db.serialize(() => {
     price REAL NOT NULL,
     category TEXT,
     stock INTEGER DEFAULT 100,
-    image_url TEXT
+    image_url TEXT,
+    sort_order INTEGER DEFAULT 0
   )`);
+
+  // 尝试添加 sort_order 字段，以防旧数据库表已经存在
+  db.run("ALTER TABLE products ADD COLUMN sort_order INTEGER DEFAULT 0", (err) => {
+    // 忽略错误，如果列已经存在则会报错，不影响运行
+  });
 
   // 创建呼叫记录表
   db.run(`CREATE TABLE IF NOT EXISTS service_calls (

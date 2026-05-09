@@ -60,17 +60,38 @@ app.post('/api/login', (req, res) => {
   }
 });
 
+// API: 批量更新排序 (必须放在 :id 路由之前)
+app.put('/api/products/reorder', (req, res) => {
+  const { orderedIds } = req.body;
+  if (!orderedIds || !Array.isArray(orderedIds)) {
+    return res.status(400).json({ error: '无效的数据格式' });
+  }
+
+  db.serialize(() => {
+    db.run("BEGIN TRANSACTION");
+    const stmt = db.prepare("UPDATE products SET sort_order = ? WHERE id = ?");
+    orderedIds.forEach((id, index) => {
+      stmt.run(index, id);
+    });
+    stmt.finalize();
+    db.run("COMMIT", (err) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ message: "排序更新成功" });
+    });
+  });
+});
+
 // API: 商品查询 (搜索或返回全部)
 app.get('/api/products', (req, res) => {
   const query = req.query.q;
   if (query) {
     const searchTerm = `%${query}%`;
-    db.all("SELECT * FROM products WHERE name LIKE ?", [searchTerm], (err, rows) => {
+    db.all("SELECT * FROM products WHERE name LIKE ? ORDER BY sort_order ASC, id DESC", [searchTerm], (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
       res.json(rows);
     });
   } else {
-    db.all("SELECT * FROM products", [], (err, rows) => {
+    db.all("SELECT * FROM products ORDER BY sort_order ASC, id DESC", [], (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
       res.json(rows);
     });
@@ -87,7 +108,7 @@ app.post('/api/products', (req, res) => {
   });
 });
 
-// API: 修改商品 (包含库存管理)
+// API: 修改商品
 app.put('/api/products/:id', (req, res) => {
   const { id } = req.params;
   const { name, price, category, stock, image_url } = req.body;

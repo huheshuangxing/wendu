@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { io, Socket } from 'socket.io-client'
 import { SOCKET_URL, API_BASE_URL } from '../config'
-import { Package, BellRing, Plus, Minus, Pencil, Trash2, X, Search, Calendar, LogOut, ChevronDown, RotateCcw } from 'lucide-vue-next'
+import { Package, BellRing, Plus, Minus, Pencil, Trash2, X, Search, Calendar, LogOut, ChevronDown, RotateCcw, GripVertical } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 
 interface ServiceCall {
@@ -236,11 +236,17 @@ const handleSaveProduct = async () => {
   
   const method = modalType.value === 'add' ? 'POST' : 'PUT'
 
+  // 如果是新增商品，设置 sort_order 为 -1 以确保排在最前面 (0 是默认)
+  const payload = { ...currentProduct.value }
+  if (modalType.value === 'add') {
+    (payload as any).sort_order = -1
+  }
+
   try {
     const response = await fetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(currentProduct.value)
+      body: JSON.stringify(payload)
     })
 
     if (response.ok) {
@@ -263,6 +269,83 @@ const deleteProduct = async (id: number) => {
   } catch (err) {
     console.error('删除失败:', err)
   }
+}
+
+// 拖拽排序逻辑
+const draggedItemId = ref<number | null>(null)
+const mousePos = ref({ x: 0, y: 0 })
+const dragItemData = ref<Product | null>(null)
+const colWidths = ref<number[]>([])
+const tableRef = ref<HTMLTableElement | null>(null)
+
+const startDrag = (e: MouseEvent, item: Product) => {
+  draggedItemId.value = item.id
+  dragItemData.value = item
+  
+  // 获取列宽以保持幻影样式完全一致
+  const tr = (e.target as HTMLElement).closest('tr')
+  if (tr) {
+    colWidths.value = Array.from(tr.children).map(td => (td as HTMLElement).offsetWidth)
+  }
+  
+  mousePos.value = { x: e.clientX, y: e.clientY }
+  
+  window.addEventListener('mousemove', handleMouseMove)
+  window.addEventListener('mouseup', endDrag)
+  document.body.style.userSelect = 'none'
+  document.body.style.cursor = 'grabbing'
+}
+
+const handleMouseMove = (e: MouseEvent) => {
+  if (draggedItemId.value === null) return
+  
+  mousePos.value = { x: e.clientX, y: e.clientY }
+  
+  if (tableRef.value) {
+    const tbody = tableRef.value.querySelector('tbody')
+    if (tbody && products.value.length > 0) {
+      const rect = tbody.getBoundingClientRect()
+      let relativeY = e.clientY - rect.top
+      relativeY = Math.max(0, Math.min(relativeY, rect.height - 1))
+      
+      const avgRowHeight = rect.height / products.value.length
+      const targetIdx = Math.floor(relativeY / avgRowHeight)
+      const validTargetIdx = Math.max(0, Math.min(targetIdx, products.value.length - 1))
+      
+      const draggedIdx = products.value.findIndex(p => p.id === draggedItemId.value)
+      
+      if (draggedIdx !== -1 && validTargetIdx !== draggedIdx) {
+        const [removed] = products.value.splice(draggedIdx, 1)
+        products.value.splice(validTargetIdx, 0, removed)
+      }
+    }
+  }
+}
+
+const endDrag = async () => {
+  if (draggedItemId.value !== null) {
+    try {
+      const orderedIds = products.value.map(p => p.id)
+      const response = await fetch(`${API_BASE_URL}/api/products/reorder`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderedIds })
+      })
+      if (!response.ok) {
+        throw new Error('保存排序失败')
+      }
+    } catch (err) {
+      console.error('保存排序失败:', err)
+      fetchProducts()
+    }
+  }
+  
+  draggedItemId.value = null
+  dragItemData.value = null
+  document.body.style.userSelect = ''
+  document.body.style.cursor = ''
+  window.removeEventListener('mousemove', handleMouseMove)
+  window.removeEventListener('mouseup', endDrag)
 }
 
 // 图片上传操作
@@ -426,23 +509,25 @@ const handleImageUpload = async (event: Event) => {
       <table class="w-full text-left text-gray-300">
         <thead class="bg-black/50 text-gray-500 text-xs uppercase tracking-wider">
           <tr>
-            <th class="px-6 py-4">呼叫时间</th>
-            <th class="px-6 py-4">房间号</th>
+            <th class="px-6 py-4 whitespace-nowrap">呼叫时间</th>
+            <th class="px-6 py-4 whitespace-nowrap">房间号</th>
             <th class="px-6 py-4">请求内容</th>
-            <th class="px-6 py-4">当前状态</th>
-            <th class="px-6 py-4 text-right">操作管理</th>
+            <th class="px-6 py-4 whitespace-nowrap">当前状态</th>
+            <th class="px-6 py-4 text-right whitespace-nowrap">操作管理</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-800">
           <tr v-for="call in filteredCalls" :key="call.id" class="hover:bg-white/5 transition-colors">
-            <td class="px-6 py-4 text-sm font-mono text-gray-500">{{ formatDateTime(call.created_at) }}</td>
-            <td class="px-6 py-4">
+            <td class="px-6 py-4 text-sm font-mono text-gray-500 whitespace-nowrap">{{ formatDateTime(call.created_at) }}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
               <span class="px-3 py-1 bg-white/10 rounded-lg font-bold text-white border border-white/5">{{ call.room_number }}</span>
             </td>
             <td class="px-6 py-4">
-              <span class="px-3 py-1 bg-brand-pink/10 text-brand-pink rounded-full text-xs font-medium border border-brand-pink/20">{{ call.type }}</span>
+              <div class="max-w-[200px] sm:max-w-md break-words whitespace-normal">
+                <span class="inline-block px-3 py-1 bg-brand-pink/10 text-brand-pink rounded-lg text-xs font-medium border border-brand-pink/20 leading-relaxed">{{ call.type }}</span>
+              </div>
             </td>
-            <td class="px-6 py-4">
+            <td class="px-6 py-4 whitespace-nowrap">
               <span v-if="call.status === 'pending'" class="flex items-center text-yellow-500 text-xs font-bold uppercase tracking-wider animate-pulse">
                 <span class="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
                 待处理
@@ -452,7 +537,7 @@ const handleImageUpload = async (event: Event) => {
                 已完成
               </span>
             </td>
-            <td class="px-6 py-4 text-right space-x-4">
+            <td class="px-6 py-4 text-right whitespace-nowrap space-x-4">
               <button 
                 v-if="call.status === 'pending'" 
                 @click="markAsProcessed(call.id)" 
@@ -482,9 +567,10 @@ const handleImageUpload = async (event: Event) => {
 
     <!-- 库存管理表格 -->
     <div v-else class="bg-dark-card border border-gray-800 rounded-2xl overflow-hidden shadow-2xl">
-      <table class="w-full text-left text-gray-300">
+      <table class="w-full text-left text-gray-300" ref="tableRef">
         <thead class="bg-black/50 text-gray-500 text-xs uppercase tracking-wider">
           <tr>
+            <th class="px-6 py-4 w-10"></th>
             <th class="px-6 py-4 w-16">图片</th>
             <th class="px-6 py-4">商品名称</th>
             <th class="px-6 py-4">所属分类</th>
@@ -493,20 +579,33 @@ const handleImageUpload = async (event: Event) => {
             <th class="px-6 py-4 text-right">管理操作</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-800">
-          <tr v-for="item in filteredProducts" :key="item.id" class="hover:bg-white/5 transition-colors">
+        <transition-group tag="tbody" name="list" class="divide-y divide-gray-800 relative">
+          <tr 
+            v-for="(item, index) in filteredProducts" 
+            :key="item.id" 
+            class="transition-transform duration-300 ease-out group bg-dark-card"
+            :class="[
+              draggedItemId === item.id ? 'opacity-0' : '',
+            ]"
+          >
+            <td 
+              class="px-4 py-4 cursor-grab text-gray-700 group-hover:text-gray-400 transition-colors"
+              @mousedown="startDrag($event, item)"
+            >
+              <GripVertical class="w-4 h-4 pointer-events-none" />
+            </td>
             <td class="px-6 py-4">
               <div v-if="item.image_url" class="w-10 h-10 rounded-lg overflow-hidden bg-black/50 border border-white/5">
-                <img :src="`${API_BASE_URL}${item.image_url}`" class="w-full h-full object-cover" />
+                <img :src="`${API_BASE_URL}${item.image_url}`" class="w-full h-full object-cover select-none pointer-events-none" draggable="false" />
               </div>
-              <div v-else class="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center text-gray-500 text-[10px] uppercase font-bold">
+              <div v-else class="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center text-gray-500 text-[10px] uppercase font-bold select-none pointer-events-none">
                 No Img
               </div>
             </td>
-            <td class="px-6 py-4 font-bold text-white">{{ item.name }}</td>
-            <td class="px-6 py-4 text-sm text-gray-400">{{ item.category }}</td>
-            <td class="px-6 py-4 text-sm font-bold text-white">¥{{ item.price.toFixed(2) }}</td>
-            <td class="px-6 py-4">
+            <td class="px-6 py-4 font-bold text-white select-none">{{ item.name }}</td>
+            <td class="px-6 py-4 text-sm text-gray-400 select-none">{{ item.category }}</td>
+            <td class="px-6 py-4 text-sm font-bold text-white select-none">¥{{ item.price.toFixed(2) }}</td>
+            <td class="px-6 py-4 select-none">
               <span v-if="item.stock <= 0" class="px-2 py-0.5 bg-brand-pink/20 text-brand-pink text-[10px] font-bold rounded border border-brand-pink/30 uppercase">
                 已售罄
               </span>
@@ -516,19 +615,65 @@ const handleImageUpload = async (event: Event) => {
             </td>
             <td class="px-6 py-4 text-right space-x-6">
               <button @click="openEditModal(item)" class="text-gray-500 hover:text-white transition-colors">
-                <Pencil class="w-4 h-4" />
+                <Pencil class="w-4 h-4 pointer-events-none" />
               </button>
               <button @click="deleteProduct(item.id)" class="text-gray-500 hover:text-brand-pink transition-colors">
-                <Trash2 class="w-4 h-4" />
+                <Trash2 class="w-4 h-4 pointer-events-none" />
               </button>
             </td>
           </tr>
-          <tr v-if="filteredProducts.length === 0">
-            <td colspan="6" class="px-6 py-20 text-center">
+        </transition-group>
+        <tbody v-if="filteredProducts.length === 0">
+          <tr>
+            <td colspan="7" class="px-6 py-20 text-center">
               <div class="flex flex-col items-center opacity-20">
                 <Package class="w-12 h-12 mb-4" />
                 <p class="text-sm">没有找到符合条件的商品</p>
               </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 拖拽幻影 (Ghost Element) -->
+    <div 
+      v-if="draggedItemId !== null && dragItemData && colWidths.length > 0"
+      class="fixed pointer-events-none z-[100] bg-[#161618] border border-gray-700 shadow-2xl opacity-90 scale-[1.02] backdrop-blur-xl"
+      :style="{
+        left: `${mousePos.x - colWidths[0] / 2}px`,
+        top: `${mousePos.y - 25}px`,
+        width: `${colWidths.reduce((a, b) => a + b, 0)}px`
+      }"
+    >
+      <table class="w-full text-left text-gray-300 border-collapse">
+        <tbody>
+          <tr>
+            <td :style="{ width: `${colWidths[0]}px` }" class="px-4 py-4">
+              <GripVertical class="w-4 h-4 text-brand-pink" />
+            </td>
+            <td :style="{ width: `${colWidths[1]}px` }" class="px-6 py-4">
+              <div v-if="dragItemData.image_url" class="w-10 h-10 rounded-lg overflow-hidden bg-black/50 border border-white/5">
+                <img :src="`${API_BASE_URL}${dragItemData.image_url}`" class="w-full h-full object-cover" />
+              </div>
+              <div v-else class="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center text-gray-500 text-[10px] uppercase font-bold">
+                No Img
+              </div>
+            </td>
+            <td :style="{ width: `${colWidths[2]}px` }" class="px-6 py-4 font-bold text-white">{{ dragItemData.name }}</td>
+            <td :style="{ width: `${colWidths[3]}px` }" class="px-6 py-4 text-sm text-gray-400">{{ dragItemData.category }}</td>
+            <td :style="{ width: `${colWidths[4]}px` }" class="px-6 py-4 text-sm font-bold text-white">¥{{ dragItemData.price.toFixed(2) }}</td>
+            <td :style="{ width: `${colWidths[5]}px` }" class="px-6 py-4">
+              <span v-if="dragItemData.stock <= 0" class="px-2 py-0.5 bg-brand-pink/20 text-brand-pink text-[10px] font-bold rounded border border-brand-pink/30 uppercase">
+                已售罄
+              </span>
+              <span v-else :class="dragItemData.stock < 10 ? 'text-brand-pink font-bold' : 'text-gray-400'" class="text-sm">
+                {{ dragItemData.stock }}
+              </span>
+            </td>
+            <td :style="{ width: `${colWidths[6]}px` }" class="px-6 py-4 text-right space-x-6 opacity-0">
+              <Pencil class="w-4 h-4 inline-block" />
+              <Trash2 class="w-4 h-4 inline-block" />
             </td>
           </tr>
         </tbody>
@@ -668,6 +813,11 @@ const handleImageUpload = async (event: Event) => {
 </template>
 
 <style scoped>
+/* 列表交换动画 */
+.list-move {
+  transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
+}
+
 .hide-number-spinners::-webkit-inner-spin-button,
 .hide-number-spinners::-webkit-outer-spin-button {
   -webkit-appearance: none;
